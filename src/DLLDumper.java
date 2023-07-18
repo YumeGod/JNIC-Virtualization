@@ -29,7 +29,9 @@ public class DLLDumper {
             List<File> list = getFileSort(System.getProperty("java.io.tmpdir"));
             File LatestDLL = list.get(0);
             System.out.println("target DLL has been successfully found from temp directory");
-            return Files.readAllBytes(LatestDLL.toPath());
+            byte[] result = Files.readAllBytes(LatestDLL.toPath());
+            LatestDLL.delete();
+            return result;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
