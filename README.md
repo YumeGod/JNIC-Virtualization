@@ -1,5 +1,5 @@
 <h1 align="center">JNIC Virtualization</h1>
-<h4 align="center">a tool that can dump native library from JNIC obfuscated jars and add a costume loader to it</h4>
+<h4 align="center">a tool that can dump native library from JNIC obfuscated jars and add a custom loader to it</h4>
 
 ### Usage
 
