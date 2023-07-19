@@ -28,7 +28,7 @@ public class DLLDumper {
         try {
             List<File> list = getFileSort(System.getProperty("java.io.tmpdir"));
             File LatestDLL = list.get(0);
-            System.out.println("target DLL has been successfully found from temp directory");
+            System.out.println("Target DLL has been successfully found from temp directory");
             byte[] result = Files.readAllBytes(LatestDLL.toPath());
             LatestDLL.delete();
             return result;
@@ -40,7 +40,7 @@ public class DLLDumper {
 
     public static List<File> getFileSort(String path) {
         List<File> list = getFiles(path, new ArrayList<File>());
-        System.out.println("Found all JNIC lib file, start comparing");
+        System.out.println("Found all JNIC lib files, start comparing");
         if (list != null && list.size() > 0) {
 
             Collections.sort(list, new Comparator<File>() {
@@ -62,7 +62,7 @@ public class DLLDumper {
     }
 
     public static List<File> getFiles(String realpath, List<File> files) {
-        System.out.println("Start iterate through temp directory to find target DLL");
+        System.out.println("Start iterate through temp directory to find JNIC lib files");
         File realFile = new File(realpath);
         if (realFile.isDirectory()) {
             File[] subfiles = realFile.listFiles();
