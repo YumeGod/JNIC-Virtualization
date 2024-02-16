@@ -1,10 +1,16 @@
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.UUID;
+import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -12,6 +18,48 @@ import java.util.zip.ZipOutputStream;
 
 public class ProcessLoaderClass {
     public static String packageName = null;
+
+    public static ArrayList<Integer> findVerificationParameter(JarFile file) {
+        System.out.println("Start finding verification parameters");
+
+        ArrayList<Integer> result = new ArrayList<>();
+        InputStream classFileInputStream = null;
+
+        try {
+            classFileInputStream = file.getInputStream(file.getJarEntry("dev/jnic/" + packageName + "/JNICLoader" + ".class"));
+            ClassReader classReader = new ClassReader(classFileInputStream);
+            ClassNode classNode = new ClassNode();
+            classReader.accept(classNode, ClassReader.SKIP_DEBUG);
+
+            for (MethodNode methodNode : classNode.methods) {
+                if (!methodNode.name.equals("<clinit>")) continue;
+
+                System.out.println("Found static initializer block");
+                AbstractInsnNode temp = null;
+                for (AbstractInsnNode insnNode : methodNode.instructions) {
+                    if (insnNode instanceof MethodInsnNode) {
+                        MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+                        if (methodInsnNode.getOpcode() == Opcodes.INVOKEVIRTUAL && methodInsnNode.owner.equals("java/nio/ByteBuffer") && methodInsnNode.name.equals("putInt")) {
+                            System.out.println("Found putInt() call");
+
+                            if (temp instanceof LdcInsnNode) {
+                                LdcInsnNode ldcInsnNode = (LdcInsnNode) temp;
+                                if (ldcInsnNode.cst instanceof Integer) {
+                                    System.out.println("Parameter Integer value: " + ldcInsnNode.cst);
+                                    result.add((Integer) ldcInsnNode.cst);
+                                }
+                            }
+                        }
+                    }
+                    temp = insnNode;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return result;
+    }
 
     public static void deleteLib(File target) {
         System.out.println("Start iterate through jar file to delete original JNIC native library and loader");
@@ -27,7 +75,7 @@ public class ProcessLoaderClass {
                 ZipEntry entry = entries.nextElement();
 
                 String entryName = entry.getName();
-                if (!entryName.startsWith("dev/jnic/lib") && !entryName.equals("dev/jnic/" + packageName + "/JNICLoader.class")) {
+                if (!entryName.startsWith("dev/jnic/lib/") && !entryName.startsWith("dev/jnic/" + packageName + "/")) {
                     zos.putNextEntry(new ZipEntry(entryName));
                     InputStream is = zip.getInputStream(entry);
                     byte[] buffer = new byte[1024];
@@ -63,9 +111,8 @@ public class ProcessLoaderClass {
                 ZipEntry entry = entries.nextElement();
 
                 String fileName = entry.getName();
-                if (fileName.contains("dev/jnic/")) {
-                    String list[] = fileName.split("/");
-                    return list[2];
+                if (fileName.contains("dev/jnic/") && fileName.split("/")[2].length() == 6) {
+                    return fileName.split("/")[2];
                 }
             }
         } catch (Exception e) {
@@ -130,12 +177,12 @@ public class ProcessLoaderClass {
             out.close();
             tmpZip.delete();
 
-            System.out.println("DLL has been successfully written to jar");
+            System.out.println("Native library has been successfully written back to jar");
 
             if (Main.writeDLL) {
                 String DLLName = Main.DLLName.substring(5, Main.DLLName.length()) + ".dll";
                 Files.write(new File(DLLName).toPath(), bytes);
-                System.out.println("DLL has been successfully saved as " + DLLName);
+                System.out.println("Native library has been successfully saved as " + DLLName);
             }
         } catch (Exception e) {
             e.printStackTrace();

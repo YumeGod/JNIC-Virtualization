@@ -67,7 +67,7 @@ public class Compiler {
         return byteArray;
     }
 
-    public static byte[] compileLoaderClass(String packageName, String DLLName) throws Exception {
+    public static byte[] compileLoaderClass(ArrayList<Integer> verificationParameters) throws Exception {
         System.out.println("Start compiling custom loader class");
 
         String compilationPath = "./";
@@ -75,11 +75,15 @@ public class Compiler {
         JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
         if (jc == null) throw new Exception("Compiler unavailable");
 
-        String code = "package dev.jnic." + packageName + ";import java.io.File;import java.io.InputStream;import java.nio.file.Files;import java.nio.file.StandardCopyOption;public class JNICLoader {    public static void init(){    }    static {        try {            String FileName = \"" + DLLName + "\";            File tempFile = File.createTempFile(\"ProtectedByYumeCloud_\", \".ycvm\");            tempFile.deleteOnExit();            InputStream inputStream = JNICLoader.class.getResourceAsStream(\"/\" + FileName);            if (inputStream != null) {                Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);            } else {                throw new Exception(\"Native library not found!\");            }            System.load(tempFile.getAbsolutePath());        } catch (Exception e) {            e.printStackTrace();        }    }}";
+        String verificationCode = "z = ByteBuffer.allocateDirect(1337).order(ByteOrder.LITTLE_ENDIAN);";
+        for (Integer i : verificationParameters) {
+            verificationCode += "z.putInt(" + i + ");";
+        }
+
+        String code = new String(Files.readAllBytes(Paths.get("loader.java"))).replace("*PACKAGE_NAME*", ProcessLoaderClass.packageName).replace("*NATIVE_LIBRARY_NAME*", Main.DLLName).replace("*VERIFICATION_CODE*", verificationCode);
         JavaSourceFromString jsfs = new JavaSourceFromString("JNICLoader", code);
 
         Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(jsfs);
-
         List<String> options = new ArrayList<String>();
         options.add("-d");
         options.add(compilationPath);
@@ -101,8 +105,7 @@ public class Compiler {
             throw new Exception("Compilation failed :" + output);
         }
 
-        byte[] result = fileToByteArray(new File("./dev/jnic/" + packageName + "/JNICLoader.class"));
-
+        byte[] result = fileToByteArray(new File("./dev/jnic/" + ProcessLoaderClass.packageName + "/JNICLoader.class"));
         deleteDirectory(Paths.get("dev"));
 
         return result;
