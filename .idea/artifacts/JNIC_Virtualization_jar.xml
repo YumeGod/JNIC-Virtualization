@@ -3,6 +3,8 @@
     <output-path>$PROJECT_DIR$/out/artifacts/JNIC_Virtualization_jar</output-path>
     <root id="archive" name="JNIC-Virtualization.jar">
       <element id="module-output" name="JNIC-Virtualization" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/asm-9.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/asm-tree-9.6.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
