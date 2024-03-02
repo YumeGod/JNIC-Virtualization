@@ -7,22 +7,29 @@ import java.util.Comparator;
 import java.util.List;
 
 public class DLLDumper {
+    public static volatile boolean flag = false;
+
     public static byte[] DumpDLL(String jarPath) {
         invokeJar(jarPath);
+        while (!flag) {
+        }
         return getLatestDLLBytes();
     }
 
     public static void invokeJar(String jarPath) {
         System.out.println("Start invoking the static initializer block to decompress the native library");
-        try {
-            URLClassLoader ucl = (URLClassLoader) DLLDumper.class.getClassLoader();
-            ClassLoader loader = new URLClassLoader(new java.net.URL[]{new File(jarPath).toURI().toURL()}, ucl);
-            Thread.currentThread().setContextClassLoader(loader);
-            Class<?> cls = null;
-            cls = Class.forName("dev.jnic." + ProcessLoaderClass.packageName + ".JNICLoader", true, loader);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        new Thread(() -> {
+            try {
+                URLClassLoader ucl = (URLClassLoader) DLLDumper.class.getClassLoader();
+                ClassLoader loader = new URLClassLoader(new java.net.URL[]{new File(jarPath).toURI().toURL()}, ucl);
+                Thread.currentThread().setContextClassLoader(loader);
+                Class<?> cls = null;
+                cls = Class.forName("dev.jnic." + ProcessLoaderClass.packageName + ".JNICLoader", true, loader);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            flag = true;
+        }).start();
     }
 
     public static byte[] getLatestDLLBytes() {
