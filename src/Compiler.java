@@ -68,8 +68,6 @@ public class Compiler {
     }
 
     public static byte[] compileLoaderClass(ArrayList<Integer> verificationParameters) throws Exception {
-        System.out.println("Start compiling custom loader class");
-
         String compilationPath = "./";
 
         JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
@@ -80,7 +78,7 @@ public class Compiler {
             verificationCode += "z.putInt(" + i + ");";
         }
 
-        String code = new String(Files.readAllBytes(Paths.get("loader.java"))).replace("*PACKAGE_NAME*", ProcessLoaderClass.packageName).replace("*NATIVE_LIBRARY_NAME*", Main.DLLName).replace("*VERIFICATION_CODE*", verificationCode);
+        String code = new String(Files.readAllBytes(Paths.get("loader.java"))).replace("*PACKAGE_NAME*", Main.packageName).replace("*NATIVE_LIBRARY_NAME*", Main.DLLName).replace("*VERIFICATION_CODE*", verificationCode);
         JavaSourceFromString jsfs = new JavaSourceFromString("JNICLoader", code);
 
         Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(jsfs);
@@ -105,7 +103,7 @@ public class Compiler {
             throw new Exception("Compilation failed :" + output);
         }
 
-        byte[] result = fileToByteArray(new File("./dev/jnic/" + ProcessLoaderClass.packageName + "/JNICLoader.class"));
+        byte[] result = fileToByteArray(new File("./dev/jnic/" + Main.packageName + "/JNICLoader.class"));
         deleteDirectory(Paths.get("dev"));
 
         return result;

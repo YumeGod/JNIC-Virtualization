@@ -17,16 +17,12 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class ProcessLoaderClass {
-    public static String packageName = null;
-
     public static ArrayList<Integer> findVerificationParameter(JarFile file) {
-        System.out.println("Start finding verification parameters");
-
         ArrayList<Integer> result = new ArrayList<>();
         InputStream classFileInputStream = null;
 
         try {
-            classFileInputStream = file.getInputStream(file.getJarEntry("dev/jnic/" + packageName + "/JNICLoader" + ".class"));
+            classFileInputStream = file.getInputStream(file.getJarEntry("dev/jnic/" + Main.packageName + "/JNICLoader" + ".class"));
             ClassReader classReader = new ClassReader(classFileInputStream);
             ClassNode classNode = new ClassNode();
             classReader.accept(classNode, ClassReader.SKIP_DEBUG);
@@ -34,7 +30,6 @@ public class ProcessLoaderClass {
             for (MethodNode methodNode : classNode.methods) {
                 if (!methodNode.name.equals("<clinit>")) continue;
 
-                System.out.println("Found static initializer block");
                 AbstractInsnNode temp = null;
                 for (AbstractInsnNode insnNode : methodNode.instructions) {
                     if (insnNode instanceof MethodInsnNode) {
@@ -62,7 +57,6 @@ public class ProcessLoaderClass {
     }
 
     public static void deleteLib(File target) {
-        System.out.println("Start iterate through jar file to delete original JNIC native library and loader");
         try {
             ZipFile zip = new ZipFile(target);
             File tempFile = File.createTempFile(zip.getName(), null);
@@ -75,7 +69,7 @@ public class ProcessLoaderClass {
                 ZipEntry entry = entries.nextElement();
 
                 String entryName = entry.getName();
-                if (!entryName.startsWith("dev/jnic/lib/") && !entryName.startsWith("dev/jnic/" + packageName + "/")) {
+                if (!entryName.startsWith("dev/jnic/lib/") && !entryName.startsWith("dev/jnic/" + Main.packageName + "/")) {
                     zos.putNextEntry(new ZipEntry(entryName));
                     InputStream is = zip.getInputStream(entry);
                     byte[] buffer = new byte[1024];
@@ -102,7 +96,6 @@ public class ProcessLoaderClass {
     }
 
     public static String getPackageName(File target) {
-        System.out.println("Start iterate through jar file to find JNIC package name");
         try {
             ZipFile zip = new ZipFile(target);
             Enumeration<? extends ZipEntry> entries = zip.entries();
@@ -111,7 +104,7 @@ public class ProcessLoaderClass {
                 ZipEntry entry = entries.nextElement();
 
                 String fileName = entry.getName();
-                if (fileName.contains("dev/jnic/") && fileName.split("/")[2].length() == 6) {
+                if (fileName.startsWith("dev/jnic/") && fileName.endsWith("JNICLoader.class") && fileName.split("/")[2].length() == 6) {
                     return fileName.split("/")[2];
                 }
             }
@@ -123,7 +116,6 @@ public class ProcessLoaderClass {
 
     public static void writeLoaderClass(File target, byte[] ClassBytes) {
         try {
-
             File tmpZip = File.createTempFile(target.getName(), null);
 
             Files.copy(target.toPath(), new FileOutputStream(tmpZip));
@@ -132,7 +124,7 @@ public class ProcessLoaderClass {
             ZipInputStream zin = new ZipInputStream(new FileInputStream(tmpZip));
             ZipOutputStream out = new ZipOutputStream(new FileOutputStream(target));
 
-            out.putNextEntry(new ZipEntry("dev/jnic/" + packageName + "/JNICLoader.class"));
+            out.putNextEntry(new ZipEntry("dev/jnic/" + Main.packageName + "/JNICLoader.class"));
             out.write(ClassBytes, 0, ClassBytes.length);
 
             for (ZipEntry ze = zin.getNextEntry(); ze != null; ze = zin.getNextEntry()) {
@@ -143,6 +135,7 @@ public class ProcessLoaderClass {
                 out.closeEntry();
             }
 
+            out.setComment(Main.ZipComment);
             out.close();
             tmpZip.delete();
 

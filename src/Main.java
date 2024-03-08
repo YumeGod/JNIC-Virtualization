@@ -3,15 +3,28 @@ import java.util.ArrayList;
 import java.util.jar.JarFile;
 
 public class Main {
+    public static File file = new File("input.jar");
     public static boolean writeDLL = false;
+    public static String ZipComment = "Obfuscation Powered By YumeCloud";
+    public static String packageName = null;
     public static String DLLName = null;
 
     public static void main(String[] args) throws Exception {
-        File file = new File(args[0]);
-        writeDLL = Boolean.parseBoolean(args[1]);
+        for (String arg : args) {
+            if (arg.equalsIgnoreCase("true") || arg.equalsIgnoreCase("false")) {
+                writeDLL = Boolean.parseBoolean(arg);
+            } else {
+                file = new File(arg);
+            }
+        }
 
-        ProcessLoaderClass.packageName = ProcessLoaderClass.getPackageName(file);
-        System.out.println("PackageName: " + ProcessLoaderClass.packageName);
+        if (!file.exists()) {
+            System.out.println("Input file does not exist!");
+            return;
+        }
+
+        packageName = ProcessLoaderClass.getPackageName(file);
+        System.out.println("JNIC Package Name: " + packageName);
 
         System.out.println("Start processing native library");
         DLLName = "YCVM/" + ProcessLoaderClass.generateUUID(16) + ".ycvm";
